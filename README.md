@@ -1,4 +1,4 @@
-# zip2epub-将ZIP内的图片批量打包为EDUP格式的电子书
+# zip2epub-将ZIP内的图片批量打包为EPUB格式的电子书
 
 ！！！本项目完全由DeepSeek V4.1 flash生成，请注意！！！
 以下内容为AI生成
