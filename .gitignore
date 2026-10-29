@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+out/
+sample_data/
+docs/*.tmp
+dist/
+.venv/
+.pyi/
+.build/
+.build-cli/
+.tmp/
+.pipcache/
