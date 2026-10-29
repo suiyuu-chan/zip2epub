@@ -1,5 +1,8 @@
 # zip2epub
 
+！！！本项目完全由DeepSeek V4.1 flash生成，请注意！！！
+以下内容为AI生成
+
 > 批量把 ZIP 里的图片按顺序装订成 EPUB 3，带编辑与预览 · 纯本地 / 无联网 / 无内容审查
 
 ![图形界面](docs/gui.png)
