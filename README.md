@@ -1,7 +1,4 @@
-# zip2epub-将ZIP内的图片批量打包为EPUB格式的电子书
-
-！！！本项目完全由DeepSeek V4.1 flash生成，请注意！！！
-以下内容为AI生成
+# zip2epub
 
 > 批量把 ZIP 里的图片按顺序装订成 EPUB 3，带编辑与预览 · 纯本地 / 无联网 / 无内容审查
 
@@ -33,6 +30,18 @@ zip2epub 把 **多个 zip 并行**转成标准 EPUB 3：书名取 zip 文件名�
 - **兼容**：EPUB 3（`nav.xhtml`）+ EPUB 2 回退（`toc.ncx`、`<meta name="cover">`），主流阅读器（Calibre、Apple Books、KOReader、静读天下等）可直接打开
 
 ## 快速开始
+
+**直接用打包好的 exe（无需安装 Python）**
+
+`dist/zip2epub.exe` —— 单个文件、无控制台窗口：
+
+- **双击**：打开图形界面
+- **从终端带参数**：走命令行，输出直接回到当前终端
+
+```powershell
+dist\zip2epub.exe --help
+dist\zip2epub.exe convert D:\comics -o D:\books --jobs 4
+```
 
 从源码运行：
 

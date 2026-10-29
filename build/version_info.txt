@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 0, 0),
-    prodvers=(1, 0, 0, 0),
+    filevers=(1, 0, 2, 0),
+    prodvers=(1, 0, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -14,12 +14,12 @@ VSVersionInfo(
       StringTable('080404b0', [
         StringStruct('CompanyName', 'zip2epub'),
         StringStruct('FileDescription', 'zip2epub - 批量 ZIP 转 EPUB'),
-        StringStruct('FileVersion', '1.0.0.0'),
+        StringStruct('FileVersion', '1.0.2.0'),
         StringStruct('InternalName', 'zip2epub'),
         StringStruct('LegalCopyright', 'MIT License'),
         StringStruct('OriginalFilename', 'zip2epub.exe'),
         StringStruct('ProductName', 'zip2epub'),
-        StringStruct('ProductVersion', '1.0.0')
+        StringStruct('ProductVersion', '1.0.2')
       ])
     ]),
     VarFileInfo([VarStruct('Translation', [2052, 1200])])

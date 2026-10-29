@@ -74,8 +74,8 @@ class Zip2EpubApp(tk.Tk):
         super().__init__()
 
         self.title("zip2epub · 批量 ZIP 转 EPUB")
-        self.geometry("1280x860")
-        self.minsize(1080, 720)
+        self.geometry(self._initial_geometry())
+        self.minsize(900, 600)
         self.configure(bg=COLORS["bg"])
 
         self.books: dict[str, BookPlan] = {}
@@ -96,8 +96,53 @@ class Zip2EpubApp(tk.Tk):
         self._init_style()
         self._build_menu()
         self._build_ui()
+        self._bind_shortcuts()
         self.after(120, self._poll_queue)
         self.after(60, self._apply_dark_title_bar)
+
+    def _initial_geometry(self) -> str:
+        """按屏幕大小取一个放得下的初始尺寸，避免窗口超出屏幕导致右侧按钮点不到。"""
+        screen_w, screen_h = self.winfo_screenwidth(), self.winfo_screenheight()
+        width = max(900, min(1280, int(screen_w * 0.86)))
+        height = max(600, min(860, int(screen_h * 0.84)))
+        left = max(0, (screen_w - width) // 2)
+        top = max(0, (screen_h - height) // 3)
+        return f"{width}x{height}+{left}+{top}"
+
+    def _bind_shortcuts(self) -> None:
+        """窗口级的快捷键，不依赖焦点落在哪个控件上。"""
+        self.bind_all("<Control-o>", lambda _e: self.add_files())
+        self.bind_all("<Control-O>", lambda _e: self.add_folder())
+        self.bind_all("<Control-Return>", lambda _e: self.start_convert())
+        self.bind_all("<Delete>", self._on_delete_key)
+
+    def _on_delete_key(self, _event=None):
+        # 只有焦点在书单上时才删书，避免在输入框/预览里按 Delete 误删
+        if self.focus_get() is self.tree:
+            self.remove_selected()
+            return "break"
+        return None
+
+    def _on_pane_release(self, _event=None) -> None:
+        self.after(10, self._clamp_sash)
+
+    def _on_window_configure(self, event) -> None:
+        if event.widget is self:
+            self.after(10, self._clamp_sash)
+
+    def _clamp_sash(self) -> None:
+        """限制分隔条位置，防止某一侧被拖到 0 宽（控件随之消失）。"""
+        try:
+            total = self.body.winfo_width()
+            if total < 100:
+                return
+            pos = self.body.sashpos(0)
+            left_min, right_min = 340, 420
+            target = max(left_min, min(pos, total - right_min))
+            if abs(target - pos) > 1:
+                self.body.sashpos(0, target)
+        except Exception:
+            pass
 
     def _apply_dark_title_bar(self) -> None:
         """让系统标题栏跟随深色界面（Win10 1903+，失败就忽略）。"""
@@ -187,32 +232,49 @@ class Zip2EpubApp(tk.Tk):
 
         bar = ttk.Frame(root)
         bar.pack(fill="x", pady=(0, 10))
+        bar.columnconfigure(0, weight=1)
 
-        ttk.Button(bar, text="添加 ZIP", command=self.add_files).pack(side="left")
-        ttk.Button(bar, text="添加文件夹", command=self.add_folder).pack(side="left", padx=(6, 0))
-        ttk.Button(bar, text="移除所选", command=self.remove_selected).pack(side="left", padx=(6, 0))
-        ttk.Button(bar, text="清空", command=self.clear_all).pack(side="left", padx=(6, 0))
+        # 第一行：左侧操作，右侧转换按钮（始终可见）
+        actions = ttk.Frame(bar)
+        actions.grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
-        ttk.Separator(bar, orient="vertical").pack(side="left", fill="y", padx=12)
+        ttk.Button(actions, text="添加 ZIP", command=self.add_files).pack(side="left")
+        ttk.Button(actions, text="添加文件夹", command=self.add_folder).pack(side="left", padx=(6, 0))
+        ttk.Button(actions, text="移除所选", command=self.remove_selected).pack(side="left", padx=(6, 0))
+        ttk.Button(actions, text="清空", command=self.clear_all).pack(side="left", padx=(6, 0))
 
-        ttk.Label(bar, text="输出目录", style="Muted.TLabel").pack(side="left")
-        self.output_entry = ttk.Entry(bar, width=40, state="disabled")
-        self.output_entry.pack(side="left", padx=(8, 6))
-        ttk.Button(bar, text="浏览…", command=self.choose_output).pack(side="left")
-        ttk.Checkbutton(bar, text="与 zip 同目录", variable=self._output_auto,
-                        command=self._toggle_output).pack(side="left", padx=(8, 0))
+        # 第二行：输出目录（输入框自适应，浏览按钮固定可见）
+        output_row = ttk.Frame(bar)
+        output_row.grid(row=1, column=0, sticky="ew")
+        output_row.columnconfigure(1, weight=1)
 
-        ttk.Label(bar, text="并行", style="Muted.TLabel").pack(side="left", padx=(14, 4))
-        ttk.Spinbox(bar, from_=1, to=8, width=3, textvariable=self._jobs).pack(side="left")
+        ttk.Label(output_row, text="输出目录", style="Muted.TLabel").grid(row=0, column=0, sticky="w")
+        self.output_entry = ttk.Entry(output_row, state="disabled")
+        self.output_entry.grid(row=0, column=1, sticky="ew", padx=(8, 6))
+        ttk.Button(output_row, text="浏览…", command=self.choose_output).grid(row=0, column=2)
+        ttk.Checkbutton(output_row, text="与 zip 同目录", variable=self._output_auto,
+                        command=self._toggle_output).grid(row=0, column=3, padx=(8, 0))
 
-        self.convert_button = ttk.Button(bar, text="开始转换", style="Accent.TButton",
+        # 第三行：并行数 + 快捷键提示 + 转换按钮（单独一行，窄窗口也不会被挤掉）
+        convert_row = ttk.Frame(bar)
+        convert_row.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+
+        ttk.Label(convert_row, text="并行", style="Muted.TLabel").pack(side="left", padx=(0, 6))
+        ttk.Spinbox(convert_row, from_=1, to=8, width=3, textvariable=self._jobs).pack(side="left")
+        ttk.Label(convert_row, text="Ctrl+O 添加 · Ctrl+Enter 开始 · Delete 删除",
+                  style="Muted.TLabel").pack(side="left", padx=(14, 0))
+
+        self.convert_button = ttk.Button(convert_row, text="开始转换", style="Accent.TButton",
                                          command=self.start_convert)
         self.convert_button.pack(side="right")
-        self.stop_button = ttk.Button(bar, text="停止", command=self.stop_convert, state="disabled")
+        self.stop_button = ttk.Button(convert_row, text="停止", command=self.stop_convert, state="disabled")
         self.stop_button.pack(side="right", padx=(0, 8))
 
         body = ttk.PanedWindow(root, orient="horizontal")
         body.pack(fill="both", expand=True)
+        body.bind("<ButtonRelease-1>", self._on_pane_release, add="+")
+        self.bind("<Configure>", self._on_window_configure, add="+")
+        self.body = body
 
         left = ttk.Frame(body)
         body.add(left, weight=3)
@@ -231,7 +293,6 @@ class Zip2EpubApp(tk.Tk):
         self.tree.tag_configure("err", foreground=COLORS["err"])
         self.tree.tag_configure("run", foreground=COLORS["accent"])
         self.tree.bind("<<TreeviewSelect>>", self.on_select)
-        self.tree.bind("<Delete>", lambda _e: self.remove_selected())
 
         scroll = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
@@ -248,6 +309,7 @@ class Zip2EpubApp(tk.Tk):
             text="左侧还没有书。\n点击「添加 ZIP」或「添加文件夹」开始。",
             style="MutedPanel.TLabel",
             justify="center",
+            wraplength=360,
         )
         self.empty_hint.grid(row=0, column=0, sticky="nsew")
 
@@ -331,7 +393,8 @@ class Zip2EpubApp(tk.Tk):
                                        text="选择左侧的页码查看预览")
         self.preview_canvas.grid(row=1, column=0, sticky="nsew")
         self.preview_text = tk.Text(preview, bg="#0d1016", fg=COLORS["fg"], bd=0, wrap="word",
-                                    font=(FONT_UI, 11), padx=16, pady=12, state="disabled")
+                                    font=(FONT_UI, 11), padx=16, pady=12, state="disabled",
+                                    takefocus=0)
 
         log_frame = ttk.Frame(root)
         log_frame.pack(fill="x", pady=(10, 0))
