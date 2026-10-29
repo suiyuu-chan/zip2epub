@@ -32,6 +32,7 @@ zip2epub 把 **多个 zip 并行**转成标准 EPUB 3：书名取 zip 文件名�
 - **本地**：不联网、不上传、不做任何内容过滤或改写；只做 EPUB 必需的技术性清理（去脚本、重写图片路径）
 - **兼容**：EPUB 3（`nav.xhtml`）+ EPUB 2 回退（`toc.ncx`、`<meta name="cover">`），主流阅读器（Calibre、Apple Books、KOReader、静读天下等）可直接打开
 
+## 快速开始
 
 从源码运行：
 
